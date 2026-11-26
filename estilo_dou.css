@@ -1,0 +1,410 @@
+:root {
+  --azul-gov: #1351b4;
+  --azul-gov-escuro: #0c326f;
+  --fundo-pagina: #f3f5f8;
+  --fundo-card: #ffffff;
+  --borda: #dce2ec;
+  --texto-principal: #1b222c;
+  --texto-secundario: #556070;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: var(--fundo-pagina);
+  color: var(--texto-principal);
+}
+
+/* Cabeçalho Superior */
+.topbar {
+  background: var(--azul-gov-escuro);
+  color: #fff;
+  padding: 16px 32px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.topbar .subtitulo {
+  font-size: 12.5px;
+  color: #c9d8f0;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.badge-sync {
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.14);
+  padding: 5px 10px;
+  border-radius: 99px;
+}
+
+/* Filtros */
+.barra-filtros {
+  background: var(--fundo-card);
+  border-bottom: 1px solid var(--borda);
+  padding: 16px 32px;
+  display: grid;
+  grid-template-columns: 2.5fr 1fr 1fr;
+  gap: 16px;
+}
+
+.campo-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo-filtro label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--texto-secundario);
+}
+
+.campo-filtro input,
+.campo-filtro select {
+  padding: 9px 12px;
+  border: 1px solid #c5cedb;
+  border-radius: 6px;
+  font-size: 13.5px;
+  background: #fff;
+  color: var(--texto-principal);
+}
+
+.campo-filtro input:focus,
+.campo-filtro select:focus {
+  outline: 2px solid rgba(19, 81, 180, 0.25);
+  border-color: var(--azul-gov);
+}
+
+/* Abas */
+.abas-nav {
+  padding: 16px 32px 0 32px;
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--borda);
+  background: #eef2f7;
+}
+
+.aba-btn {
+  padding: 11px 18px;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--texto-secundario);
+  border-radius: 8px 8px 0 0;
+  cursor: pointer;
+}
+
+.aba-btn.ativa {
+  background: var(--fundo-pagina);
+  color: var(--azul-gov);
+  border-color: var(--borda);
+  margin-bottom: -1px;
+}
+
+.container-principal {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 24px 32px 48px 32px;
+}
+
+.oculto {
+  display: none !important;
+}
+
+/* KPIs */
+.grid-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  background: var(--fundo-card);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 18px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kpi-card.destaque {
+  border-left: 4px solid var(--azul-gov);
+}
+
+.kpi-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--texto-secundario);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.kpi-valor {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--texto-principal);
+}
+
+/* Tabelas do Relatório */
+.bloco-tabela {
+  background: var(--fundo-card);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.bloco-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 12px;
+}
+
+.bloco-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.tabela-scroll {
+  overflow-x: auto;
+  max-height: 460px;
+}
+
+.tabela-dados {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tabela-dados th,
+.tabela-dados td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e6ebf2;
+  text-align: left;
+  vertical-align: top;
+}
+
+.tabela-dados th {
+  background: #f7f9fc;
+  font-weight: 600;
+  color: var(--texto-secundario);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.tabela-dados tbody tr:hover {
+  background: #f4f8ff;
+}
+
+/* Botões e Badges */
+.btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-primario {
+  background: var(--azul-gov);
+  color: #fff;
+}
+
+.btn-primario:hover {
+  background: var(--azul-gov-escuro);
+}
+
+.btn-secundario {
+  background: #fff;
+  color: var(--texto-principal);
+  border-color: #c5cedb;
+}
+
+.btn-secundario:hover {
+  background: #f0f4fa;
+}
+
+.btn-mini {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.pill-status {
+  padding: 3px 9px;
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.status-Pendente { background: #fff3cd; color: #856404; }
+.status-Em { background: #cfe2ff; color: #084298; }
+.status-Conferido { background: #d1e7dd; color: #0f5132; }
+
+/* Controles da Visão Unitária */
+.controles-unitaria {
+  background: var(--fundo-card);
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  display: grid;
+  grid-template-columns: 3fr 1.2fr auto;
+  gap: 16px;
+  align-items: end;
+}
+
+.acoes-unitaria {
+  display: flex;
+  gap: 10px;
+}
+
+/* =========================================================
+   FAC-SÍMILE DO DIÁRIO OFICIAL DA UNIÃO (IMPRENSA NACIONAL)
+   ========================================================= */
+.folha-dou {
+  max-width: 880px;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 48px 58px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.12);
+  border-top: 4px solid var(--azul-gov);
+  font-family: "Times New Roman", Georgia, serif;
+  color: #111111;
+}
+
+.dou-topo-titulo {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  margin-bottom: 6px;
+}
+
+.dou-metadados {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 12px;
+  color: #333;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #cccccc;
+  margin-bottom: 24px;
+  line-height: 1.65;
+}
+
+.dou-metadados .sep {
+  margin: 0 6px;
+  color: #999;
+}
+
+.dou-ato-titulo {
+  text-align: center;
+  font-weight: bold;
+  font-size: 16px;
+  text-transform: uppercase;
+  margin: 18px 0 22px 0;
+  letter-spacing: 0.3px;
+}
+
+.dou-ementa {
+  margin-left: 44%;
+  text-align: justify;
+  font-size: 13.5px;
+  line-height: 1.48;
+  margin-bottom: 24px;
+}
+
+.dou-corpo p {
+  text-align: justify;
+  text-indent: 2.4em;
+  font-size: 15px;
+  line-height: 1.62;
+  margin: 0 0 12px 0;
+}
+
+.dou-assinatura {
+  text-align: center;
+  font-weight: bold;
+  font-size: 14.5px;
+  text-transform: uppercase;
+  margin: 34px 0 28px 0;
+}
+
+.dou-anexo-titulo {
+  text-align: center;
+  font-weight: bold;
+  font-size: 15px;
+  margin: 26px 0 12px 0;
+}
+
+.dou-tabela-anexo {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11.5px;
+  margin-bottom: 28px;
+}
+
+.dou-tabela-anexo th,
+.dou-tabela-anexo td {
+  border: 1px solid #444;
+  padding: 6px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.dou-tabela-anexo th {
+  background-color: #f2f2f2;
+  font-weight: bold;
+}
+
+.dou-rodape-certificacao {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 11px;
+  color: #555;
+  border-top: 1px solid #ddd;
+  padding-top: 10px;
+  margin-top: 24px;
+}
+
+/* Regras limpas para impressão ou Salvar como PDF */
+@media print {
+  body { background: #fff; }
+  .topbar, .barra-filtros, .abas-nav, .controles-unitaria { display: none !important; }
+  .container-principal { padding: 0; max-width: 100%; }
+  .folha-dou {
+    box-shadow: none;
+    border-top: none;
+    padding: 10px 15px;
+    max-width: 100%;
+  }
+}

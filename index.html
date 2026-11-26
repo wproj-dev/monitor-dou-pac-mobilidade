@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor DOU — Novo PAC Mobilidade Urbana</title>
+  <link rel="stylesheet" href="estilo_dou.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-info">
+      <h1>Monitor DOU · Novo PAC Mobilidade Urbana</h1>
+      <span class="subtitulo">Ministério das Cidades · Habilitação, Enquadramento e Seleção</span>
+    </div>
+    <div class="topbar-actions">
+      <span id="badge-atualizacao" class="badge-sync">Carregando banco...</span>
+      <button id="btn-recarregar" class="btn btn-secundario" type="button">↻ Atualizar Dados</button>
+    </div>
+  </header>
+
+  <section class="barra-filtros">
+    <div class="campo-filtro campo-busca">
+      <label for="filtro-busca">Pesquisa Livre (Município, Empresa, CNPJ, Protocolo ou Portaria)</label>
+      <input type="text" id="filtro-busca" placeholder="Ex.: Belo Horizonte, FGTS, 18.715.383, Renovação de Frota...">
+    </div>
+    <div class="campo-filtro">
+      <label for="filtro-ano">Ano</label>
+      <select id="filtro-ano">
+        <option value="TODOS">Todos os anos</option>
+      </select>
+    </div>
+    <div class="campo-filtro">
+      <label for="filtro-status">Status de Triagem</label>
+      <select id="filtro-status">
+        <option value="TODOS">Todos os status</option>
+        <option value="Pendente">Pendente</option>
+        <option value="Em análise">Em análise</option>
+        <option value="Conferido">Conferido</option>
+      </select>
+    </div>
+  </section>
+
+  <nav class="abas-nav">
+    <button class="aba-btn ativa" data-aba="relatorio" type="button">
+      📊 Relatório de Publicações (Compilado)
+    </button>
+    <button class="aba-btn" data-aba="unitaria" type="button">
+      📰 Visualização Unitária (Formato DOU)
+    </button>
+  </nav>
+
+  <!-- ABA 1: RELATÓRIO COMPILADO -->
+  <main id="view-relatorio" class="container-principal">
+    <section class="grid-kpis">
+      <article class="kpi-card">
+        <span class="kpi-label">Portarias Publicadas</span>
+        <strong id="kpi-portarias" class="kpi-valor">0</strong>
+      </article>
+      <article class="kpi-card">
+        <span class="kpi-label">Propostas nos Anexos</span>
+        <strong id="kpi-propostas" class="kpi-valor">0</strong>
+      </article>
+      <article class="kpi-card destaque">
+        <span class="kpi-label">Volume Financeiro Compilado</span>
+        <strong id="kpi-volume" class="kpi-valor">R$ 0,00</strong>
+      </article>
+    </section>
+
+    <section class="bloco-tabela">
+      <div class="bloco-header">
+        <h2>Portarias Capturadas</h2>
+        <button id="btn-exportar-csv" class="btn btn-primario" type="button">📥 Exportar Anexos (Excel / CSV)</button>
+      </div>
+      <div class="tabela-scroll">
+        <table class="tabela-dados" id="tabela-portarias">
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Edição / Pág.</th>
+              <th>Ato Normativo</th>
+              <th>Propostas</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="bloco-tabela">
+      <div class="bloco-header">
+        <h2>Propostas Detalhadas (Anexos Unificados)</h2>
+        <span id="contador-anexos" class="texto-auxiliar"></span>
+      </div>
+      <div class="tabela-scroll">
+        <table class="tabela-dados" id="tabela-anexos">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- ABA 2: VISUALIZAÇÃO UNITÁRIA (FAC-SÍMILE DOU) -->
+  <main id="view-unitaria" class="container-principal oculto">
+    <section class="controles-unitaria">
+      <div class="campo-filtro campo-seletor-ato">
+        <label for="seletor-portaria">Selecione a Portaria Publicada:</label>
+        <select id="seletor-portaria"></select>
+      </div>
+      <div class="campo-filtro">
+        <label for="seletor-status-unitario">Status de Triagem:</label>
+        <select id="seletor-status-unitario">
+          <option value="Pendente">Pendente</option>
+          <option value="Em análise">Em análise</option>
+          <option value="Conferido">Conferido</option>
+        </select>
+      </div>
+      <div class="acoes-unitaria">
+        <a id="link-original-dou" href="#" target="_blank" rel="noopener" class="btn btn-secundario">Abrir no in.gov.br ↗</a>
+        <button id="btn-imprimir-dou" class="btn btn-primario" type="button">🖨️ Imprimir / PDF</button>
+      </div>
+    </section>
+
+    <article id="folha-dou" class="folha-dou">
+      <p class="texto-vazio">Nenhuma portaria selecionada.</p>
+    </article>
+  </main>
+
+  <script src="app_dou.js"></script>
+</body>
+</html>
