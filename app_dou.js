@@ -7,16 +7,17 @@ let estadoGlobal = {
   modoOnline: false,
 };
 
-const ORDEM_COLUNAS_ANEXO = [
-  "Proponente",
-  "Município",
-  "UF",
-  "Proposta",
-  "Objeto da Proposta",
-  "Modalidade / Programa",
-  "Agente Financeiro",
-  "Valor (R$)",
-  "Contrapartida (R$)",
+const DEFINICAO_COLUNAS_ANEXO = [
+  { campo: "proponente", titulo: "Proponente" },
+  { campo: "municipio", titulo: "Município" },
+  { campo: "uf", titulo: "UF" },
+  { campo: "proposta", titulo: "Proposta" },
+  { campo: "objeto", titulo: "Objeto da Proposta" },
+  { campo: "modalidade", titulo: "Modalidade / Programa" },
+  { campo: "agente_financeiro", titulo: "Agente Financeiro" },
+  { campo: "valor_proposta", titulo: "Valor da Proposta" },
+  { campo: "contrapartida", titulo: "Contrapartida" },
+  { campo: "situacao", titulo: "Situação" },
 ];
 
 function normalizar(texto) {
@@ -46,63 +47,19 @@ function formatarDataBR(dataIso) {
   return dataIso;
 }
 
-function converterValorBRL(valorStr) {
-  if (valorStr === null || valorStr === undefined) return 0;
-  const texto = String(valorStr).trim();
-  if (!texto || ["nan", "none", "null", "-", "—"].includes(texto.toLowerCase())) return 0;
-
-  let limpo = texto.replace(/[^\d,.-]/g, "");
-  if (!limpo) return 0;
-
-  if (limpo.includes(",")) {
-    limpo = limpo.replace(/\./g, "").replace(",", ".");
-  } else if ((limpo.match(/\./g) || []).length > 1) {
-    limpo = limpo.replace(/\./g, "");
-  } else if (/^-?\d+\.\d{3}$/.test(limpo)) {
-    limpo = limpo.replace(".", "");
-  }
-
-  const numero = Number(limpo);
-  return Number.isFinite(numero) ? numero : 0;
-}
-
 function formatarBRL(valor) {
-  return valor.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  return Number(valor || 0).toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
 }
 
-function identificarColunaValor(colunas) {
-  if (colunas.includes("Valor (R$)")) return "Valor (R$)";
-  const prioridades = ["financiamento", "emprestimo", "investimento", "recurso", "repasse", "valor"];
-  for (const chave of prioridades) {
-    for (const col of colunas) {
-      const norm = normalizar(col);
-      if (norm.includes(chave) && !norm.includes("contrapartida")) {
-        return col;
-      }
-    }
-  }
-  return null;
-}
-
-function obterColunasOrdenadas(anexos) {
-  const colunasSet = new Set();
-  for (const a of anexos) {
-    Object.keys(a.campos || {}).forEach((k) => {
-      const norm = normalizar(k);
-      if (norm && norm !== "cnpj" && !norm.includes("processo")) {
-        colunasSet.add(k);
-      }
-    });
-  }
-
-  const ordenadas = [];
-  for (const colPref of ORDEM_COLUNAS_ANEXO) {
-    if (colunasSet.has(colPref)) {
-      ordenadas.push(colPref);
-      colunasSet.delete(colPref);
-    }
-  }
-  return [...ordenadas, ...colunasSet];
+function obterColunasAtivas(anexos) {
+  return DEFINICAO_COLUNAS_ANEXO.filter(
+    (def) =>
+      def.campo === "valor_proposta" ||
+      anexos.some((a) => String(a[def.campo] || "").trim() !== "")
+  );
 }
 
 async function carregarDadosBanco() {
@@ -125,28 +82,37 @@ async function carregarDadosBanco() {
 
     if (dados.erro) throw new Error(dados.erro);
 
-    const overrides = JSON.parse(localStorage.getItem("dou_status_overrides") || "{}");
-    estadoGlobal.portarias = (dados.portarias || []).map((p) => ({
-      ...p,
-      status_triagem:
-        estadoGlobal.modoOnline && overrides[p.url_title]
-          ? overrides[p.url_title]
-          : p.status_triagem,
-    }));
+    estadoGlobal.portarias = dados.portarias || [];
     estadoGlobal.anexos = dados.anexos || [];
 
-    const mapaTextoAnexos = {};
-    const contagemPorPortaria = {};
+    const anexosPorPortaria = {};
     for (const a of estadoGlobal.anexos) {
-      contagemPorPortaria[a.url_title] = (contagemPorPortaria[a.url_title] || 0) + 1;
-      const valoresLinha = [a.cnpj || "", ...Object.values(a.campos || {})].join(" ");
-      mapaTextoAnexos[a.url_title] = (mapaTextoAnexos[a.url_title] || "") + " " + valoresLinha;
+      a.indice_busca = normalizar(
+        [
+          formatarDataBR(a.data_publicacao),
+          a.titulo_portaria,
+          a.cnpj,
+          a.proponente,
+          a.municipio,
+          a.uf,
+          a.proposta,
+          a.objeto,
+          a.modalidade,
+          a.agente_financeiro,
+          a.valor_proposta,
+          a.situacao,
+        ].join(" ")
+      );
+      if (!anexosPorPortaria[a.url_title]) anexosPorPortaria[a.url_title] = [];
+      anexosPorPortaria[a.url_title].push(a);
     }
 
     for (const p of estadoGlobal.portarias) {
-      p.qtd_propostas = contagemPorPortaria[p.url_title] || 0;
-      p.indice_busca = normalizar(
-        `${p.titulo} ${p.texto_completo} ${mapaTextoAnexos[p.url_title] || ""}`
+      const lista = anexosPorPortaria[p.url_title] || [];
+      p.qtd_propostas_total = lista.length;
+      p.qtd_propostas_filtradas = lista.length;
+      p.indice_busca_portaria = normalizar(
+        `${formatarDataBR(p.data_publicacao)} ${p.titulo} ${p.texto_completo}`
       );
     }
 
@@ -183,83 +149,122 @@ function preencherFiltroAnos() {
 function aplicarFiltros() {
   const termo = normalizar(document.getElementById("filtro-busca")?.value || "");
   const ano = document.getElementById("filtro-ano")?.value || "TODOS";
-  const status = document.getElementById("filtro-status")?.value || "TODOS";
 
-  estadoGlobal.portariasFiltradas = estadoGlobal.portarias.filter((p) => {
-    if (ano !== "TODOS" && !p.data_publicacao.startsWith(ano)) return false;
-    if (status !== "TODOS" && p.status_triagem !== status) return false;
-    if (termo && !p.indice_busca.includes(termo)) return false;
-    return true;
-  });
+  const portariasDoAno = estadoGlobal.portarias.filter(
+    (p) => ano === "TODOS" || p.data_publicacao.startsWith(ano)
+  );
+  const idsDoAno = new Set(portariasDoAno.map((p) => p.url_title));
+  const anexosDoAno = estadoGlobal.anexos.filter((a) => idsDoAno.has(a.url_title));
 
-  const idsAtivos = new Set(estadoGlobal.portariasFiltradas.map((p) => p.url_title));
-  estadoGlobal.anexosFiltrados = estadoGlobal.anexos.filter((a) => idsAtivos.has(a.url_title));
+  if (!termo) {
+    for (const p of portariasDoAno) {
+      p.qtd_propostas_filtradas = p.qtd_propostas_total;
+    }
+    estadoGlobal.portariasFiltradas = portariasDoAno;
+    estadoGlobal.anexosFiltrados = anexosDoAno;
+  } else {
+    // 1. Filtra as propostas diretamente pelo termo pesquisado
+    const anexosPorPortariaFiltrados = {};
+    for (const a of anexosDoAno) {
+      if (a.indice_busca.includes(termo)) {
+        if (!anexosPorPortariaFiltrados[a.url_title]) {
+          anexosPorPortariaFiltrados[a.url_title] = [];
+        }
+        anexosPorPortariaFiltrados[a.url_title].push(a);
+      }
+    }
 
-  renderizarRelatorio();
+    // 2. Mantém portarias que têm propostas compatíveis OU texto da portaria compatível
+    const portariasResult = [];
+    const anexosResult = [];
+
+    for (const p of portariasDoAno) {
+      const propostasMatch = anexosPorPortariaFiltrados[p.url_title] || [];
+      const textoPortariaMatch = p.indice_busca_portaria.includes(termo);
+
+      if (propostasMatch.length > 0) {
+        p.qtd_propostas_filtradas = propostasMatch.length;
+        portariasResult.push(p);
+        anexosResult.push(...propostasMatch);
+      } else if (textoPortariaMatch) {
+        // Caso o termo apareça apenas no texto legal da portaria (sem tabela correspondente)
+        const todasDaPortaria = anexosDoAno.filter((a) => a.url_title === p.url_title);
+        p.qtd_propostas_filtradas = todasDaPortaria.length;
+        portariasResult.push(p);
+        anexosResult.push(...todasDaPortaria);
+      }
+    }
+
+    estadoGlobal.portariasFiltradas = portariasResult;
+    estadoGlobal.anexosFiltrados = anexosResult;
+  }
+
+  renderizarRelatorio(Boolean(termo));
   renderizarSeletorUnitario();
 }
 
-function renderizarRelatorio() {
+function renderizarRelatorio(filtroAtivo = false) {
   const portarias = estadoGlobal.portariasFiltradas;
   const anexos = estadoGlobal.anexosFiltrados;
 
-  const colunasAnexo = obterColunasOrdenadas(anexos);
-  const colValor = identificarColunaValor(colunasAnexo);
-
-  let somaFinanceira = 0;
-  if (colValor) {
-    for (const a of anexos) {
-      somaFinanceira += converterValorBRL(a.campos[colValor]);
-    }
-  }
+  const somaFinanceira = anexos.reduce(
+    (acc, a) => acc + (Number(a.valor_numerico) || 0),
+    0
+  );
 
   document.getElementById("kpi-portarias").textContent = portarias.length;
   document.getElementById("kpi-propostas").textContent = anexos.length;
   document.getElementById("kpi-volume").textContent = formatarBRL(somaFinanceira);
 
-  // Tabela 1: Portarias (sem coluna Status)
+  // Tabela 1: Portarias
   const tbodyPortarias = document.querySelector("#tabela-portarias tbody");
   if (portarias.length === 0) {
     tbodyPortarias.innerHTML =
       '<tr><td colspan="5">Nenhuma portaria encontrada para os filtros atuais.</td></tr>';
   } else {
     tbodyPortarias.innerHTML = portarias
-      .map(
-        (p) => `
+      .map((p) => {
+        const textoPropostas =
+          filtroAtivo && p.qtd_propostas_filtradas !== p.qtd_propostas_total
+            ? `<strong>${p.qtd_propostas_filtradas}</strong> / ${p.qtd_propostas_total}`
+            : `${p.qtd_propostas_total}`;
+
+        return `
           <tr>
             <td>${formatarDataBR(p.data_publicacao)}</td>
             <td>Ed. ${escaparHtml(p.edicao || "—")} · Pág. ${escaparHtml(p.pagina || "—")}</td>
             <td><strong>${escaparHtml(p.titulo)}</strong></td>
-            <td>${p.qtd_propostas}</td>
+            <td>${textoPropostas}</td>
             <td>
               <button class="btn btn-secundario btn-mini" onclick="abrirPortariaUnitaria('${escaparHtml(p.url_title)}')">
                 Ler DOU
               </button>
             </td>
           </tr>
-        `
-      )
+        `;
+      })
       .join("");
   }
 
-  // Tabela 2: Anexos Unificados
+  // Tabela 2: Propostas Detalhadas
   const theadAnexos = document.querySelector("#tabela-anexos thead");
   const tbodyAnexos = document.querySelector("#tabela-anexos tbody");
   document.getElementById("contador-anexos").textContent = `${anexos.length} linha(s) exibida(s)`;
 
   if (anexos.length === 0) {
     theadAnexos.innerHTML = "";
-    tbodyAnexos.innerHTML = "<tr><td>Nenhuma proposta de anexo no recorte atual.</td></tr>";
+    tbodyAnexos.innerHTML = "<tr><td>Nenhuma proposta encontrada no recorte atual.</td></tr>";
     return;
   }
 
-  const headers = ["Data", "Portaria", "CNPJ", ...colunasAnexo];
+  const colunasAtivas = obterColunasAtivas(anexos);
+  const headers = ["Data", "Portaria", "CNPJ", ...colunasAtivas.map((c) => c.titulo)];
   theadAnexos.innerHTML = `<tr>${headers.map((h) => `<th>${escaparHtml(h)}</th>`).join("")}</tr>`;
 
   tbodyAnexos.innerHTML = anexos
     .map((a) => {
-      const tdsDinamicos = colunasAnexo
-        .map((c) => `<td>${escaparHtml(a.campos[c] ?? "")}</td>`)
+      const tdsDinamicos = colunasAtivas
+        .map((c) => `<td>${escaparHtml(a[c.campo] ?? "")}</td>`)
         .join("");
       return `
         <tr>
@@ -305,8 +310,6 @@ function renderizarFacSimileDOU(urlTitle) {
   if (!portaria) return;
 
   estadoGlobal.urlTitleSelecionado = urlTitle;
-  const selStatus = document.getElementById("seletor-status-unitario");
-  if (selStatus) selStatus.value = portaria.status_triagem;
   document.getElementById("link-original-dou").href = portaria.url;
 
   const anexosPortaria = estadoGlobal.anexos.filter((a) => a.url_title === urlTitle);
@@ -357,13 +360,15 @@ function renderizarFacSimileDOU(urlTitle) {
 
   let htmlAnexo = "";
   if (anexosPortaria.length > 0) {
-    const cols = obterColunasOrdenadas(anexosPortaria);
-    const ths = ["CNPJ", ...cols].map((c) => `<th>${escaparHtml(c)}</th>`).join("");
+    const colunasAtivas = obterColunasAtivas(anexosPortaria);
+    const ths = ["CNPJ", ...colunasAtivas.map((c) => c.titulo)]
+      .map((h) => `<th>${escaparHtml(h)}</th>`)
+      .join("");
     const trs = anexosPortaria
       .map(
         (a) =>
-          `<tr><td>${escaparHtml(a.cnpj || "")}</td>${cols
-            .map((c) => `<td>${escaparHtml(a.campos[c] ?? "")}</td>`)
+          `<tr><td>${escaparHtml(a.cnpj || "")}</td>${colunasAtivas
+            .map((c) => `<td>${escaparHtml(a[c.campo] ?? "")}</td>`)
             .join("")}</tr>`
       )
       .join("");
@@ -417,34 +422,6 @@ function abrirPortariaUnitaria(urlTitle) {
   renderizarFacSimileDOU(urlTitle);
 }
 
-async function salvarStatusTriagem(urlTitle, novoStatus) {
-  if (estadoGlobal.modoOnline) {
-    const overrides = JSON.parse(localStorage.getItem("dou_status_overrides") || "{}");
-    overrides[urlTitle] = novoStatus;
-    localStorage.setItem("dou_status_overrides", JSON.stringify(overrides));
-    const alvo = estadoGlobal.portarias.find((p) => p.url_title === urlTitle);
-    if (alvo) alvo.status_triagem = novoStatus;
-    aplicarFiltros();
-    return;
-  }
-
-  try {
-    const resp = await fetch("/api/status", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ url_title: urlTitle, status_triagem: novoStatus }),
-    });
-    const res = await resp.json();
-    if (!res.ok) throw new Error(res.erro || "Falha ao atualizar status");
-
-    const alvo = estadoGlobal.portarias.find((p) => p.url_title === urlTitle);
-    if (alvo) alvo.status_triagem = novoStatus;
-    aplicarFiltros();
-  } catch (err) {
-    alert("Erro ao salvar status: " + err.message);
-  }
-}
-
 function exportarCSVExcel() {
   const anexos = estadoGlobal.anexosFiltrados;
   if (anexos.length === 0) {
@@ -452,8 +429,8 @@ function exportarCSVExcel() {
     return;
   }
 
-  const cols = obterColunasOrdenadas(anexos);
-  const cabecalho = ["Data_Publicacao", "Portaria", "CNPJ", ...cols];
+  const colunasAtivas = obterColunasAtivas(anexos);
+  const cabecalho = ["Data_Publicacao", "Portaria", "CNPJ", ...colunasAtivas.map((c) => c.titulo)];
 
   const escaparCSV = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
   const linhas = [cabecalho.map(escaparCSV).join(";")];
@@ -463,7 +440,7 @@ function exportarCSVExcel() {
       formatarDataBR(a.data_publicacao),
       a.titulo_portaria,
       a.cnpj ?? "",
-      ...cols.map((c) => a.campos[c] ?? ""),
+      ...colunasAtivas.map((c) => a[c.campo] ?? ""),
     ];
     linhas.push(linha.map(escaparCSV).join(";"));
   }
@@ -482,19 +459,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("filtro-busca")?.addEventListener("input", aplicarFiltros);
   document.getElementById("filtro-ano")?.addEventListener("change", aplicarFiltros);
-  document.getElementById("filtro-status")?.addEventListener("change", aplicarFiltros);
   document.getElementById("btn-recarregar")?.addEventListener("click", carregarDadosBanco);
   document.getElementById("btn-exportar-csv")?.addEventListener("click", exportarCSVExcel);
   document.getElementById("btn-imprimir-dou")?.addEventListener("click", () => window.print());
 
   document.getElementById("seletor-portaria")?.addEventListener("change", (e) => {
     renderizarFacSimileDOU(e.target.value);
-  });
-
-  document.getElementById("seletor-status-unitario")?.addEventListener("change", (e) => {
-    if (estadoGlobal.urlTitleSelecionado) {
-      salvarStatusTriagem(estadoGlobal.urlTitleSelecionado, e.target.value);
-    }
   });
 
   carregarDadosBanco();
