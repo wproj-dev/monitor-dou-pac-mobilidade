@@ -7,11 +7,24 @@ let estadoGlobal = {
   modoOnline: false,
 };
 
+const ORDEM_COLUNAS_ANEXO = [
+  "Proponente",
+  "Município",
+  "UF",
+  "Proposta",
+  "Objeto da Proposta",
+  "Modalidade / Programa",
+  "Agente Financeiro",
+  "Valor (R$)",
+  "Contrapartida (R$)",
+];
+
 function normalizar(texto) {
   if (!texto) return "";
   return String(texto)
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[º°]/g, "")
     .replace(/\s+/g, " ")
     .toLowerCase()
     .trim();
@@ -58,6 +71,7 @@ function formatarBRL(valor) {
 }
 
 function identificarColunaValor(colunas) {
+  if (colunas.includes("Valor (R$)")) return "Valor (R$)";
   const prioridades = ["financiamento", "emprestimo", "investimento", "recurso", "repasse", "valor"];
   for (const chave of prioridades) {
     for (const col of colunas) {
@@ -68,6 +82,27 @@ function identificarColunaValor(colunas) {
     }
   }
   return null;
+}
+
+function obterColunasOrdenadas(anexos) {
+  const colunasSet = new Set();
+  for (const a of anexos) {
+    Object.keys(a.campos || {}).forEach((k) => {
+      const norm = normalizar(k);
+      if (norm && norm !== "cnpj" && !norm.includes("processo")) {
+        colunasSet.add(k);
+      }
+    });
+  }
+
+  const ordenadas = [];
+  for (const colPref of ORDEM_COLUNAS_ANEXO) {
+    if (colunasSet.has(colPref)) {
+      ordenadas.push(colPref);
+      colunasSet.delete(colPref);
+    }
+  }
+  return [...ordenadas, ...colunasSet];
 }
 
 async function carregarDadosBanco() {
@@ -129,6 +164,7 @@ async function carregarDadosBanco() {
 
 function preencherFiltroAnos() {
   const selectAno = document.getElementById("filtro-ano");
+  if (!selectAno) return;
   const valorAnterior = selectAno.value;
   const anos = [...new Set(estadoGlobal.portarias.map((p) => p.data_publicacao.slice(0, 4)))].sort(
     (a, b) => b.localeCompare(a)
@@ -145,9 +181,9 @@ function preencherFiltroAnos() {
 }
 
 function aplicarFiltros() {
-  const termo = normalizar(document.getElementById("filtro-busca").value);
-  const ano = document.getElementById("filtro-ano").value;
-  const status = document.getElementById("filtro-status").value;
+  const termo = normalizar(document.getElementById("filtro-busca")?.value || "");
+  const ano = document.getElementById("filtro-ano")?.value || "TODOS";
+  const status = document.getElementById("filtro-status")?.value || "TODOS";
 
   estadoGlobal.portariasFiltradas = estadoGlobal.portarias.filter((p) => {
     if (ano !== "TODOS" && !p.data_publicacao.startsWith(ano)) return false;
@@ -167,11 +203,7 @@ function renderizarRelatorio() {
   const portarias = estadoGlobal.portariasFiltradas;
   const anexos = estadoGlobal.anexosFiltrados;
 
-  const colunasSet = new Set();
-  for (const a of anexos) {
-    Object.keys(a.campos || {}).forEach((k) => colunasSet.add(k));
-  }
-  const colunasAnexo = [...colunasSet];
+  const colunasAnexo = obterColunasOrdenadas(anexos);
   const colValor = identificarColunaValor(colunasAnexo);
 
   let somaFinanceira = 0;
@@ -185,32 +217,32 @@ function renderizarRelatorio() {
   document.getElementById("kpi-propostas").textContent = anexos.length;
   document.getElementById("kpi-volume").textContent = formatarBRL(somaFinanceira);
 
+  // Tabela 1: Portarias (sem coluna Status)
   const tbodyPortarias = document.querySelector("#tabela-portarias tbody");
   if (portarias.length === 0) {
     tbodyPortarias.innerHTML =
-      '<tr><td colspan="6">Nenhuma portaria encontrada para os filtros atuais.</td></tr>';
+      '<tr><td colspan="5">Nenhuma portaria encontrada para os filtros atuais.</td></tr>';
   } else {
     tbodyPortarias.innerHTML = portarias
-      .map((p) => {
-        const classeStatus = "status-" + p.status_triagem.split(" ")[0];
-        return `
+      .map(
+        (p) => `
           <tr>
             <td>${formatarDataBR(p.data_publicacao)}</td>
             <td>Ed. ${escaparHtml(p.edicao || "—")} · Pág. ${escaparHtml(p.pagina || "—")}</td>
             <td><strong>${escaparHtml(p.titulo)}</strong></td>
             <td>${p.qtd_propostas}</td>
-            <td><span class="pill-status ${classeStatus}">${escaparHtml(p.status_triagem)}</span></td>
             <td>
               <button class="btn btn-secundario btn-mini" onclick="abrirPortariaUnitaria('${escaparHtml(p.url_title)}')">
                 Ler DOU
               </button>
             </td>
           </tr>
-        `;
-      })
+        `
+      )
       .join("");
   }
 
+  // Tabela 2: Anexos Unificados
   const theadAnexos = document.querySelector("#tabela-anexos thead");
   const tbodyAnexos = document.querySelector("#tabela-anexos tbody");
   document.getElementById("contador-anexos").textContent = `${anexos.length} linha(s) exibida(s)`;
@@ -273,7 +305,8 @@ function renderizarFacSimileDOU(urlTitle) {
   if (!portaria) return;
 
   estadoGlobal.urlTitleSelecionado = urlTitle;
-  document.getElementById("seletor-status-unitario").value = portaria.status_triagem;
+  const selStatus = document.getElementById("seletor-status-unitario");
+  if (selStatus) selStatus.value = portaria.status_triagem;
   document.getElementById("link-original-dou").href = portaria.url;
 
   const anexosPortaria = estadoGlobal.anexos.filter((a) => a.url_title === urlTitle);
@@ -324,15 +357,14 @@ function renderizarFacSimileDOU(urlTitle) {
 
   let htmlAnexo = "";
   if (anexosPortaria.length > 0) {
-    const colsSet = new Set();
-    anexosPortaria.forEach((a) => Object.keys(a.campos || {}).forEach((k) => colsSet.add(k)));
-    const cols = [...colsSet];
-
-    const ths = cols.map((c) => `<th>${escaparHtml(c)}</th>`).join("");
+    const cols = obterColunasOrdenadas(anexosPortaria);
+    const ths = ["CNPJ", ...cols].map((c) => `<th>${escaparHtml(c)}</th>`).join("");
     const trs = anexosPortaria
       .map(
         (a) =>
-          `<tr>${cols.map((c) => `<td>${escaparHtml(a.campos[c] ?? "")}</td>`).join("")}</tr>`
+          `<tr><td>${escaparHtml(a.cnpj || "")}</td>${cols
+            .map((c) => `<td>${escaparHtml(a.campos[c] ?? "")}</td>`)
+            .join("")}</tr>`
       )
       .join("");
 
@@ -420,9 +452,7 @@ function exportarCSVExcel() {
     return;
   }
 
-  const colsSet = new Set();
-  anexos.forEach((a) => Object.keys(a.campos || {}).forEach((k) => colsSet.add(k)));
-  const cols = [...colsSet];
+  const cols = obterColunasOrdenadas(anexos);
   const cabecalho = ["Data_Publicacao", "Portaria", "CNPJ", ...cols];
 
   const escaparCSV = (val) => `"${String(val ?? "").replace(/"/g, '""')}"`;
@@ -450,18 +480,18 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => alternarAba(btn.dataset.aba));
   });
 
-  document.getElementById("filtro-busca").addEventListener("input", aplicarFiltros);
-  document.getElementById("filtro-ano").addEventListener("change", aplicarFiltros);
-  document.getElementById("filtro-status").addEventListener("change", aplicarFiltros);
-  document.getElementById("btn-recarregar").addEventListener("click", carregarDadosBanco);
-  document.getElementById("btn-exportar-csv").addEventListener("click", exportarCSVExcel);
-  document.getElementById("btn-imprimir-dou").addEventListener("click", () => window.print());
+  document.getElementById("filtro-busca")?.addEventListener("input", aplicarFiltros);
+  document.getElementById("filtro-ano")?.addEventListener("change", aplicarFiltros);
+  document.getElementById("filtro-status")?.addEventListener("change", aplicarFiltros);
+  document.getElementById("btn-recarregar")?.addEventListener("click", carregarDadosBanco);
+  document.getElementById("btn-exportar-csv")?.addEventListener("click", exportarCSVExcel);
+  document.getElementById("btn-imprimir-dou")?.addEventListener("click", () => window.print());
 
-  document.getElementById("seletor-portaria").addEventListener("change", (e) => {
+  document.getElementById("seletor-portaria")?.addEventListener("change", (e) => {
     renderizarFacSimileDOU(e.target.value);
   });
 
-  document.getElementById("seletor-status-unitario").addEventListener("change", (e) => {
+  document.getElementById("seletor-status-unitario")?.addEventListener("change", (e) => {
     if (estadoGlobal.urlTitleSelecionado) {
       salvarStatusTriagem(estadoGlobal.urlTitleSelecionado, e.target.value);
     }
