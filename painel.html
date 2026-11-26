@@ -1,12 +1,27 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230b3b75'/%3E%3Crect x='15' y='12' width='34' height='40' rx='4' fill='%23ffffff'/%3E%3Crect x='21' y='21' width='22' height='4' rx='2' fill='%230b3b75'/%3E%3Crect x='21' y='30' width='22' height='4' rx='2' fill='%230b3b75'/%3E%3Crect x='21' y='39' width='14' height='4' rx='2' fill='%2316a34a'/%3E%3C/svg%3E">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Monitor DOU — Novo PAC Mobilidade Urbana</title>
   <link rel="stylesheet" href="estilo_dou.css">
 </head>
 <body>
+  <div id="modal-modo-acesso" class="modal-visao oculto">
+  <div class="modal-visao-card">
+    <h2>Monitor DOU · Novo PAC</h2>
+    <p>Como você prefere visualizar o painel neste dispositivo?</p>
+    <div class="modal-visao-botoes">
+      <button type="button" class="btn btn-primario" onclick="definirModoVisao('mobile')">
+        📱 Acesso Mobile
+      </button>
+      <button type="button" class="btn btn-secundario" onclick="definirModoVisao('desktop')">
+        🖥️ Acesso Desktop
+      </button>
+    </div>
+  </div>
+</div>
   <header class="topbar">
     <div class="topbar-info">
       <h1>Monitor DOU · Novo PAC Mobilidade Urbana</h1>
@@ -15,6 +30,9 @@
     <div class="topbar-actions">
       <span id="badge-atualizacao" class="badge-sync">Carregando banco...</span>
       <button id="btn-recarregar" class="btn btn-secundario" type="button">↻ Atualizar Dados</button>
+      <button id="btn-alternar-visao" type="button" class="btn btn-secundario" onclick="alternarModoVisao()">
+  📱 Acesso Mobile
+</button>
     </div>
   </header>
 

@@ -408,3 +408,97 @@ body {
     max-width: 100%;
   }
 }
+/* Modal de escolha inicial (Mobile / Desktop) */
+.modal-visao {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 16px;
+}
+
+.modal-visao.oculto {
+  display: none;
+}
+
+.modal-visao-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 380px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.25);
+}
+
+.modal-visao-card h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+  color: #0b3b75;
+}
+
+.modal-visao-card p {
+  margin: 0 0 20px;
+  color: #475569;
+  font-size: 0.95rem;
+}
+
+.modal-visao-botoes {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.modal-visao-botoes .btn {
+  width: 100%;
+  padding: 12px;
+  font-size: 1rem;
+}
+
+/* Adaptações quando o Acesso Mobile está ativo */
+body.modo-mobile .container,
+body.modo-mobile main,
+body.modo-mobile header {
+  max-width: 100%;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+body.modo-mobile .kpis-grid,
+body.modo-mobile .grid-kpis {
+  display: grid;
+  grid-template-columns: 1fr !important;
+  gap: 10px;
+}
+
+body.modo-mobile .barra-filtros,
+body.modo-mobile .filtros-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+body.modo-mobile .barra-filtros input,
+body.modo-mobile .barra-filtros select,
+body.modo-mobile .filtros-grid input,
+body.modo-mobile .filtros-grid select {
+  width: 100%;
+  font-size: 16px; /* Evita zoom automático no iOS/Android ao tocar no campo */
+}
+
+body.modo-mobile table {
+  font-size: 0.82rem;
+}
+
+body.modo-mobile th,
+body.modo-mobile td {
+  padding: 8px 6px;
+}
+
+body.modo-mobile .folha-dou {
+  padding: 16px 12px;
+  font-size: 0.92rem;
+}

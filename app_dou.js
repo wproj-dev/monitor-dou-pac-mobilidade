@@ -467,5 +467,47 @@ document.addEventListener("DOMContentLoaded", () => {
     renderizarFacSimileDOU(e.target.value);
   });
 
+inicializarModoVisao();
+
   carregarDadosBanco();
 });
+function definirModoVisao(modo) {
+  localStorage.setItem("dou_modo_visao", modo);
+  aplicarModoVisao(modo);
+  const modal = document.getElementById("modal-modo-acesso");
+  if (modal) modal.classList.add("oculto");
+}
+
+function aplicarModoVisao(modo) {
+  const ehMobile = modo === "mobile";
+  document.body.classList.toggle("modo-mobile", ehMobile);
+
+  const viewport = document.querySelector('meta[name="viewport"]');
+  if (viewport) {
+    viewport.setAttribute(
+      "content",
+      ehMobile ? "width=device-width, initial-scale=1.0" : "width=1200"
+    );
+  }
+
+  const btn = document.getElementById("btn-alternar-visao");
+  if (btn) {
+    btn.textContent = ehMobile ? "🖥️ Acesso Desktop" : "📱 Acesso Mobile";
+  }
+}
+
+function alternarModoVisao() {
+  const atual = localStorage.getItem("dou_modo_visao") || "desktop";
+  definirModoVisao(atual === "mobile" ? "desktop" : "mobile");
+}
+
+function inicializarModoVisao() {
+  const salvo = localStorage.getItem("dou_modo_visao");
+  if (!salvo) {
+    const modal = document.getElementById("modal-modo-acesso");
+    if (modal) modal.classList.remove("oculto");
+    aplicarModoVisao(window.innerWidth <= 768 ? "mobile" : "desktop");
+  } else {
+    aplicarModoVisao(salvo);
+  }
+}
